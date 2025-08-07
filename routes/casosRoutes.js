@@ -32,22 +32,12 @@ const casosController = require('../controllers/casosController');
  *         agente_id:
  *           type: integer
  *           description: ID do agente responsável pelo caso
- *         created_at:
- *           type: string
- *           format: date-time
- *           description: Data de criação do caso
- *         updated_at:
- *           type: string
- *           format: date-time
- *           description: Data da última atualização
  *       example:
  *         id: 1
  *         titulo: "Furto de veículo"
  *         descricao: "Veículo furtado no estacionamento do shopping"
  *         status: "aberto"
  *         agente_id: 1
- *         created_at: "2024-01-15T10:30:00Z"
- *         updated_at: "2024-01-15T10:30:00Z"
  */
 
 /**

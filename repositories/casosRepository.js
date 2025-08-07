@@ -23,8 +23,11 @@ const update = async (id, data) => {
 };
 
 const remove = async (id) => {
-    const [casoRemovido] = await knex('casos').where({ id }).del().returning('*');
-    return casoRemovido;
+    const caso = await knex('caso').where({id}).first();
+    if(!caso) return null;
+
+    await knex('casos').where({ id }).del();
+    return caso;
 };
 
 module.exports = {

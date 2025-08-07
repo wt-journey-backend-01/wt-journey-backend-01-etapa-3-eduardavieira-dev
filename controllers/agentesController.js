@@ -13,33 +13,8 @@ class ApiError extends Error {
 const getAgentes = async (req, res, next) => {
     try {
         const { cargo, sort } = req.query;
-        let agentes = await agentesRepository.findAll();
-
-        if (cargo) {
-            agentes = agentes.filter(agente =>
-            typeof agente.cargo === 'string' &&
-            agente.cargo.toLowerCase() === cargo.toLowerCase()
-            );
-            
-            if (agentes.length === 0) {
-                throw new ApiError(`Agentes com cargo "${cargo}" não encontrados.`, 404);
-            }
-        }
-
-        if (sort === 'dataDeIncorporacao') {
-        agentes.sort((a, b) => {
-            if (a.dataDeIncorporacao < b.dataDeIncorporacao) return -1;
-            if (a.dataDeIncorporacao > b.dataDeIncorporacao) return 1;
-            return 0;
-            });
-        } else if (sort === '-dataDeIncorporacao') {
-            agentes.sort((a, b) => {
-                if (a.dataDeIncorporacao > b.dataDeIncorporacao) return -1;
-                if (a.dataDeIncorporacao < b.dataDeIncorporacao) return 1;
-                return 0;
-            });
-        }
-
+        const agentes = await agentesRepository.findAll({ cargo, sort });
+        
         res.status(200).json(agentes);
     } catch (error) {
         if (error instanceof ApiError) {
@@ -48,6 +23,7 @@ const getAgentes = async (req, res, next) => {
         next(new ApiError('Erro ao buscar agentes', 500));
     }
 };
+
 
 const getAgenteById = async (req, res, next) => {
     const { id } = req.params;

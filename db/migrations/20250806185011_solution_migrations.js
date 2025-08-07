@@ -22,7 +22,6 @@ exports.up = async function (knex) {
             .inTable('agentes')
             .notNullable()
             .onDelete('CASCADE');
-        table.timestamps();
     });
 };
 

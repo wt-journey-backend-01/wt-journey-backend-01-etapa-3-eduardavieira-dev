@@ -185,9 +185,11 @@ const partialUpdateCaso = async (req, res, next) => {
         const data = casoSchema.partial().parse(dadosRecebidos);
 
         // Verificar se o agente existe se agente_id foi fornecido
-        const agenteExiste = await agentesRepository.findById(data.agente_id);
-        if (!agenteExiste) {
-            throw new ApiError('Agente não encontrado. Verifique se o agente_id é válido.', 404);
+        if (agente_id !== undefined) {
+            const agenteExiste = await agentesRepository.findById(agente_id);
+            if (!agenteExiste) {
+                throw new ApiError('Agente não encontrado. Verifique se o agente_id é válido.', 404);
+            }
         }
 
         const casoAtualizado = await casosRepository.update(id, data);
