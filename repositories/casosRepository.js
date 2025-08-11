@@ -4,21 +4,32 @@ const findAll = (filters = {}) => {
     let query = knex('casos');
 
     if (filters.agente_id) {
-        query = query.where('agente_id', filters.agente_id);
+        const agenteId = Number(filters.agente_id);
+        if (!Number.isInteger(agenteId)) {
+            throw new Error('O parâmetro agente_id deve ser um número inteiro');
+        }
+        query = query.where('agente_id', agenteId);
     }
 
     if (filters.status) {
+        if (!['aberto', 'solucionado'].includes(filters.status)) {
+            throw new Error('Status inválido. Use "aberto" ou "solucionado"');
+        }
         query = query.where('status', filters.status);
     }
 
     if (filters.q) {
-        query = query.where(function() {
-            this.where('titulo', 'ilike', `%${filters.q}%`)
-                .orWhere('descricao', 'ilike', `%${filters.q}%`);
-        });
+        const searchTerm = filters.q.trim();
+        if (searchTerm) {
+            query = query.where(function() {
+                this.where('titulo', 'ilike', `%${searchTerm}%`)
+                    .orWhere('descricao', 'ilike', `%${searchTerm}%`);
+            });
+        }
     }
 
-    return query.select('*');
+    return query.select('*')
+        .orderBy('id', 'desc'); // Ordenação padrão por id decrescente
 }
 
 const findById = (id) => {

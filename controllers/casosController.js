@@ -14,6 +14,20 @@ class ApiError extends Error {
 const getCasos = async (req, res, next) => {
   try {
     const { agente_id, status, q } = req.query;
+    
+    // Validate agente_id if provided
+    if (agente_id) {
+      const idNum = Number(agente_id);
+      if (!Number.isInteger(idNum)) {
+        throw new ApiError('O parâmetro agente_id deve ser um número inteiro', 400);
+      }
+    }
+
+    // Validate status if provided
+    if (status && !['aberto', 'solucionado'].includes(status)) {
+      throw new ApiError('Status inválido. Use "aberto" ou "solucionado"', 400);
+    }
+
     const filtros = { agente_id, status, q };
 
     const casos = await casosRepository.findAll(filtros);

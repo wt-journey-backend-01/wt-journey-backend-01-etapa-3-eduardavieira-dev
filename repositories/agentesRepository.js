@@ -1,15 +1,22 @@
 const knex = require('../db/db');
 
 const findAll = async (filters = {}) => {
-        let query = knex('agentes');
+    let query = knex('agentes');
 
     if (filters.cargo) {
         query = query.whereRaw('LOWER(cargo) = ?', filters.cargo.toLowerCase());
     }
 
+    if (filters.dataDeIncorporacao) {
+        query = query.where('dataDeIncorporacao', filters.dataDeIncorporacao);
+    }
+
     if (filters.sort) {
+        if (!['dataDeIncorporacao', '-dataDeIncorporacao'].includes(filters.sort)) {
+            throw new Error('Ordenação permitida apenas por dataDeIncorporacao');
+        }
         const direction = filters.sort.startsWith('-') ? 'desc' : 'asc';
-        const column = filters.sort.replace('-', '');
+        const column = 'dataDeIncorporacao';
         query = query.orderBy(column, direction);
     }
 

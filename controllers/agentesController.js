@@ -12,8 +12,21 @@ class ApiError extends Error {
 
 const getAgentes = async (req, res, next) => {
     try {
-        const { cargo, sort } = req.query;
-        const agentes = await agentesRepository.findAll({ cargo, sort });
+        const { cargo, sort, dataDeIncorporacao } = req.query;
+        
+        // Validate sort parameter
+        if (sort && !['dataDeIncorporacao', '-dataDeIncorporacao'].includes(sort)) {
+            throw new ApiError('Ordenação permitida apenas por dataDeIncorporacao', 400);
+        }
+
+        const agentes = await agentesRepository.findAll({ cargo, sort, dataDeIncorporacao });
+        
+        if (agentes.length === 0) {
+            if (cargo || dataDeIncorporacao) {
+                throw new ApiError('Nenhum agente encontrado com os filtros fornecidos', 404);
+            }
+            throw new ApiError('Nenhum agente encontrado', 404);
+        }
         
         res.status(200).json(agentes);
     } catch (error) {
@@ -28,6 +41,10 @@ const getAgentes = async (req, res, next) => {
 const getAgenteById = async (req, res, next) => {
     const { id } = req.params;
     try {
+        const idNum = Number(id);
+        if (!Number.isInteger(idNum)) {
+            throw new ApiError('O parâmetro id deve ser um número inteiro', 400);
+        }
         const agente = await agentesRepository.findById(id);
         if (!agente) {
             throw new ApiError('Agente não encontrado', 404);
