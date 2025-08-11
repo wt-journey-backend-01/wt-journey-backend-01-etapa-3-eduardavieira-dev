@@ -12,8 +12,10 @@ exports.seed = async function (knex) {
   const agente2 = agentes.find(a => a.nome === 'Ana Pereira');
 
   if (!agente1 || !agente2) {
-    throw new Error('Agentes necessários não encontrados. Verifique os seeds.');
-    }
+  console.error('Agentes encontrados:', agentes.map(a => a.nome));
+  throw new Error('Agentes necessários não encontrados. Verifique os seeds.');
+  }
+
 
   // Insere casos, referenciando agentes pelos ids (1 e 2)
   await knex('casos').insert([

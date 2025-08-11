@@ -12,57 +12,29 @@ class ApiError extends Error {
 }
 
 const getCasos = async (req, res, next) => {
-    try {
-        const { agente_id, status, q } = req.query;
-        let casos = await casosRepository.findAll();
-        
-        if (agente_id) {
-            casos = casos.filter(caso => caso.agente_id === parseInt(agente_id));
-            if (casos.length === 0) {
-                throw new ApiError(`Casos com agente_id "${agente_id}" não encontrados.`, 404);
-            }
-        }
-        
-        if (status) {
-            casos = casos.filter(caso => 
-                caso.status.toLowerCase() === status.toLowerCase()
-            );
-            if (casos.length === 0) {
-                throw new ApiError(`Casos com status "${status}" não encontrados.`, 404);
-            }
-        }
-        
-        // Buscar por termo se fornecido
-        if (q) {
-        const searchTerm = q.trim().toLowerCase();
-        if (searchTerm.length > 0) {
-            const termos = searchTerm.split(' ').filter(t => t.length > 0);
+  try {
+    const { agente_id, status, q } = req.query;
+    const filtros = { agente_id, status, q };
 
-            const casosFiltrados = casos.filter(caso => {
-                const tituloLower = (caso.titulo || '').toLowerCase();
-                const descricaoLower = (caso.descricao || '').toLowerCase();
+    const casos = await casosRepository.findAll(filtros);
 
-                return termos.some(termo =>
-                    tituloLower.includes(termo) || descricaoLower.includes(termo)
-                );
-            });
-
-            if (casosFiltrados.length === 0) {
-                throw new ApiError(`Nenhum caso encontrado com o termo "${q}".`, 404);
-            }
-
-            casos = casosFiltrados;
-        }
+    if (casos.length === 0) {
+      if (agente_id || status || q) {
+        throw new ApiError(`Nenhum caso encontrado com os filtros fornecidos.`, 404);
+      } else {
+        throw new ApiError(`Nenhum caso encontrado.`, 404);
+      }
     }
 
     res.status(200).json(casos);
-    } catch (error) {
-        if (error instanceof ApiError) {
-            return next(error);
-        }
-        next(new ApiError('Erro ao buscar casos', 500));
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return next(error);
     }
+    next(new ApiError('Erro ao buscar casos', 500));
+  }
 };
+
 
 const getCasoById = async (req, res, next) => {
     const { id } = req.params;

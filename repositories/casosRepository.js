@@ -1,7 +1,24 @@
 const knex = require('../db/db');
 
-const findAll = () => {
-    return knex('casos').select('*');
+const findAll = (filters = {}) => {
+    let query = knex('casos');
+
+    if (filters.agente_id) {
+        query = query.where('agente_id', filters.agente_id);
+    }
+
+    if (filters.status) {
+        query = query.where('status', filters.status);
+    }
+
+    if (filters.q) {
+        query = query.where(function() {
+            this.where('titulo', 'ilike', `%${filters.q}%`)
+                .orWhere('descricao', 'ilike', `%${filters.q}%`);
+        });
+    }
+
+    return query.select('*');
 }
 
 const findById = (id) => {
@@ -23,7 +40,7 @@ const update = async (id, data) => {
 };
 
 const remove = async (id) => {
-    const caso = await knex('caso').where({id}).first();
+    const caso = await knex('casos').where({id}).first();
     if(!caso) return null;
 
     await knex('casos').where({ id }).del();

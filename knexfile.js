@@ -9,16 +9,22 @@ require('dotenv').config();
 //   POSTGRES_USER: process.env.POSTGRES_USER,
 //   POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD,
 //   POSTGRES_DB: process.env.POSTGRES_DB,
-//   DB_HOST: process.env.DB_HOST,
 // });
+
+console.log('🔍 Variáveis carregadas do .env:', {
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  db: process.env.POSTGRES_DB,
+});
 
 module.exports = {
 
   development: {
     client: 'pg',
     connection: {
-      host: process.env.DB_HOST || '127.0.0.1',
-      port: Number(process.env.DB_PORT) || 5438,
+      host: '127.0.0.1',
+      port: 5432,
+      // se já tem o PostgreSQL, mude para 5436
       user: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
