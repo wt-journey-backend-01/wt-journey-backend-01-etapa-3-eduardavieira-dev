@@ -83,6 +83,48 @@ const casosController = require('../controllers/casosController');
  *         description: Erro interno do servidor
  */
 router.get('/', casosController.getCasos);
+
+/**
+ * @swagger
+ * /casos/search:
+ *  get:
+ *    summary: Retorna uma lista de casos
+ *    description: Retorna uma lista de casos com base no termo de pesquisa
+ *    tags: [Casos]
+ *    parameters:
+ *      - name: q
+ *        in: query
+ *        required: false
+ *        schema:
+ *          type: string
+ *          example: Roubo no banco
+ *    responses:
+ *      200:
+ *        description: Lista de casos
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                $ref: '#/components/schemas/Caso'
+ *      404:
+ *        description: Nenhum caso encontrado para o termo pesquisado
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                status:
+ *                  type: string
+ *                  example: 404
+ *                message:
+ *                  type: string
+ *                  example: Nenhum caso encontrado para a busca especificada
+ *                errors:
+ *                  type: string
+ *                  example: []
+ */
+router.get('/search', casosController.filter);
 /**
  * @swagger
  * /casos/{id}/agente:

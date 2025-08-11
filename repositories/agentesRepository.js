@@ -1,30 +1,18 @@
 const knex = require('../db/db');
 
-const findAll = async (filters = {}) => {
-    let query = knex('agentes');
-
-    if (filters.cargo) {
-        query = query.whereRaw('LOWER(cargo) = ?', filters.cargo.toLowerCase());
-    }
-
-    if (filters.dataDeIncorporacao) {
-        query = query.where('dataDeIncorporacao', filters.dataDeIncorporacao);
-    }
-
-    if (filters.sort) {
-        if (!['dataDeIncorporacao', '-dataDeIncorporacao'].includes(filters.sort)) {
-            throw new Error('Ordenação permitida apenas por dataDeIncorporacao');
-        }
-        const direction = filters.sort.startsWith('-') ? 'desc' : 'asc';
-        const column = 'dataDeIncorporacao';
-        query = query.orderBy(column, direction);
-    }
-
-    return await query.select('*');
+const findAll = async (filter = {}, orderBy = ['id', 'asc']) => {
+     const result = await db('agentes')
+            .select('*')
+            .where(filter)
+            .orderBy(orderBy[0], orderBy[1]);
+    return await result.map((agente) => ({
+            ...agente,
+            dataDeIncorporacao: new Date(agente.dataDeIncorporacao).toISOString().split('T')[0],
+        }));
 }
 
-const findById = (id) => {
-    return knex('agentes').where({ id }).first();
+const findById = async (id) => {
+    return await knex('agentes').where({ id }).first();
 }
 
 const create = async (data) => {

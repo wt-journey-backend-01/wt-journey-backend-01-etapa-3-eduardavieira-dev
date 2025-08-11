@@ -9,30 +9,32 @@ class ApiError extends Error {
         this.statusCode = statusCode;
     }
 }
-
 const getAgentes = async (req, res, next) => {
     try {
-        const { cargo, sort, dataDeIncorporacao } = req.query;
-        
-        // Validate sort parameter
-        if (sort && !['dataDeIncorporacao', '-dataDeIncorporacao'].includes(sort)) {
-            throw new ApiError('Ordenação permitida apenas por dataDeIncorporacao', 400);
+        const { cargo, sort } = req.query;
+
+        const filter = {};
+        if (cargo) filter.cargo = cargo;
+
+        const orderByMapping = {
+            dataDeIncorporacao: ['dataDeIncorporacao', 'asc'],
+            '-dataDeIncorporacao': ['dataDeIncorporacao', 'desc'],
+        };
+
+        let orderBy = orderByMapping[sort];
+
+        if (!orderBy) {
+            return res.status(400).json({ message: 'Ordenação permitida apenas por dataDeIncorporacao' });
         }
 
-        const agentes = await agentesRepository.findAll({ cargo, sort, dataDeIncorporacao });
-        
-        if (agentes.length === 0) {
-            if (cargo || dataDeIncorporacao) {
-                throw new ApiError('Nenhum agente encontrado com os filtros fornecidos', 404);
-            }
+        const agentes = await agentesRepository.findAll(filter, orderBy);
+
+        if (!agentes || agentes.length === 0) {
             throw new ApiError('Nenhum agente encontrado', 404);
         }
-        
+
         res.status(200).json(agentes);
     } catch (error) {
-        if (error instanceof ApiError) {
-            return next(error);
-        }
         next(new ApiError('Erro ao buscar agentes', 500));
     }
 };

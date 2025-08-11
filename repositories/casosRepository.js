@@ -18,18 +18,18 @@ const findAll = (filters = {}) => {
         query = query.where('status', filters.status);
     }
 
-    if (filters.q) {
-        const searchTerm = filters.q.trim();
-        if (searchTerm) {
-            query = query.where(function() {
-                this.where('titulo', 'ilike', `%${searchTerm}%`)
-                    .orWhere('descricao', 'ilike', `%${searchTerm}%`);
-            });
-        }
-    }
-
     return query.select('*')
         .orderBy('id', 'desc'); // Ordenação padrão por id decrescente
+}
+
+async function filter(term) {
+    const result = await knex('casos')
+        .select('*')
+        .where('titulo', 'ilike', `%${term}%`)
+        .orWhere('descricao', 'ilike', `%${term}%`);
+
+    // console.log(result);
+    return result;
 }
 
 const findById = (id) => {
@@ -63,5 +63,6 @@ module.exports = {
     findById,
     create,
     update,
-    remove
+    remove,
+    filter
 };

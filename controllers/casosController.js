@@ -240,6 +240,16 @@ const getAgenteDoCaso = async (req, res, next) => {
     }
 };
 
+async function filter(req, res) {
+    const term = req.query.q;
+
+    const casos = await casosRepository.filter(term);
+    if (casos.length === 0) {
+        throw new ApiError('Nenhum caso encontrado para a busca especificada', 404);
+    }
+    res.json(casos);
+}
+
 module.exports = {
     getCasos,
     getCasoById,
@@ -247,5 +257,6 @@ module.exports = {
     updateCaso,
     partialUpdateCaso,
     deleteCaso,
-    getAgenteDoCaso
+    getAgenteDoCaso,
+    filter
 };
