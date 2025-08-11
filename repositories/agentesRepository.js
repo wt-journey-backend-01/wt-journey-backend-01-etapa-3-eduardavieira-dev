@@ -1,14 +1,20 @@
 const knex = require('../db/db');
 
 const findAll = async (filter = {}, orderBy = ['id', 'asc']) => {
-     const result = await db('agentes')
+    try {
+        const result = await knex('agentes')
             .select('*')
             .where(filter)
             .orderBy(orderBy[0], orderBy[1]);
-    return await result.map((agente) => ({
+        
+        return result.map((agente) => ({
             ...agente,
             dataDeIncorporacao: new Date(agente.dataDeIncorporacao).toISOString().split('T')[0],
         }));
+    } catch (error) {
+        console.error('Erro ao buscar agentes:', error);
+        throw error;
+    }
 }
 
 const findById = async (id) => {

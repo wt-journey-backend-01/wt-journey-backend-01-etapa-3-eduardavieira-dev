@@ -11,30 +11,42 @@ class ApiError extends Error {
 }
 const getAgentes = async (req, res, next) => {
     try {
-        const { cargo, sort } = req.query;
+        const { cargo, sort, dataDeIncorporacao } = req.query;
 
+        // Construindo o filtro
         const filter = {};
         if (cargo) filter.cargo = cargo;
+        if (dataDeIncorporacao) filter.dataDeIncorporacao = dataDeIncorporacao;
 
+        // Configuração de ordenação
         const orderByMapping = {
             dataDeIncorporacao: ['dataDeIncorporacao', 'asc'],
             '-dataDeIncorporacao': ['dataDeIncorporacao', 'desc'],
         };
 
-        let orderBy = orderByMapping[sort];
+        // Ordenação padrão se não for especificada
+        let orderBy = sort ? orderByMapping[sort] : ['id', 'asc'];
 
-        if (!orderBy) {
-            return res.status(400).json({ message: 'Ordenação permitida apenas por dataDeIncorporacao' });
+        // Validação da ordenação apenas se foi especificada
+        if (sort && !orderByMapping[sort]) {
+            return res.status(400).json({ 
+                message: 'Ordenação permitida apenas por dataDeIncorporacao ou -dataDeIncorporacao'
+            });
         }
 
         const agentes = await agentesRepository.findAll(filter, orderBy);
 
+        // Mensagem específica dependendo dos filtros usados
         if (!agentes || agentes.length === 0) {
+            if (cargo || dataDeIncorporacao) {
+                throw new ApiError('Nenhum agente encontrado com os filtros fornecidos', 404);
+            }
             throw new ApiError('Nenhum agente encontrado', 404);
         }
 
         res.status(200).json(agentes);
     } catch (error) {
+        console.error('Erro ao buscar agentes:', error);
         next(new ApiError('Erro ao buscar agentes', 500));
     }
 };
@@ -47,7 +59,7 @@ const getAgenteById = async (req, res, next) => {
         if (!Number.isInteger(idNum)) {
             throw new ApiError('O parâmetro id deve ser um número inteiro', 400);
         }
-        const agente = await agentesRepository.findById(id);
+        const agente = await agentesRepository.findById(idNum);
         if (!agente) {
             throw new ApiError('Agente não encontrado', 404);
         }

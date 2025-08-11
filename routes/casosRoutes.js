@@ -55,11 +55,6 @@ const casosController = require('../controllers/casosController');
  *     tags: [Casos]
  *     parameters:
  *       - in: query
- *         name: agente_id
- *         schema:
- *           type: string
- *         description: Filtrar casos por ID do agente
- *       - in: query
  *         name: status
  *         schema:
  *           type: string
