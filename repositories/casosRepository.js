@@ -3,7 +3,14 @@ const { AppError } = require('../utils/errorHandler');
 
 async function findAll(filter = {}) {
     try {
-        const result = await db('casos').select('*').where(filter);
+        let query = db('casos').select('*');
+        
+        // Aplica filtros apenas se existirem
+        if (Object.keys(filter).length > 0) {
+            query = query.where(filter);
+        }
+        
+        const result = await query;
         return result;
     } catch (error) {
         throw new AppError(500, 'Erro ao buscar casos', [error.message]);
@@ -57,6 +64,11 @@ async function remove(id) {
 
 async function filter(term) {
     try {
+        // Valida se o termo de busca foi fornecido
+        if (!term || term.trim() === '') {
+            return [];
+        }
+        
         const result = await db('casos')
             .select('*')
             .where('titulo', 'ilike', `%${term}%`)

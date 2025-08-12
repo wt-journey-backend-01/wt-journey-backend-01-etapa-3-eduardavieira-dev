@@ -1,26 +1,23 @@
-# Como rodar o projeto na sua maquina
+# Segue algumas instruções para rodar o projeto
 
-Requisitos: ter o docker instalado no seu computador, vs code e o node
+## 1. Execução do container docker
 
-Executar o docker
 ```
-docker compose up -d
+docker compose --env-file .env up -d
 ```
-(mostre como parar no final das intruções)
 
-Executar o migrations
+## 2. Execução das migrations
+
 ```
 npx knex migrate:latest
 ```
 
-Executar o seeds para popular o banco de dados
+## 3. Execução dos seeds
 
 ```
 npx knex seed:run
 ```
-
-docker compose --env-file .env up
-docker compose --env-file .env up -d
-
-testar:
-docker exec db-departamento-policial psql -U postgres -d policia_db -c "SELECT * FROM agentes;"
+## Derrubar o banco
+```
+docker compose down -v
+```

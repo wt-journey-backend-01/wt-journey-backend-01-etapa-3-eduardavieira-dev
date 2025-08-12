@@ -125,7 +125,7 @@ async function deleteCaso(req, res) {
 }
 
 async function getAgenteByCasoId(req, res) {
-    const casoId = req.params.id;
+    const casoId = req.params.caso_id;
     const caso = await casosRepository.findById(casoId);
 
     if (!caso) {
