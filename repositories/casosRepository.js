@@ -1,82 +1,78 @@
-const knex = require('../db/db');
+const db = require('../db/db');
+const { AppError } = require('../utils/errorHandler');
 
-const findAll = async (filters = {}) => {
+async function findAll(filter = {}) {
     try {
-        let query = knex('casos');
-
-        if (filters.agente_id) {
-            const agenteId = Number(filters.agente_id);
-            if (!Number.isInteger(agenteId)) {
-                throw new Error('O parâmetro agente_id deve ser um número inteiro');
-            }
-            query = query.where('agente_id', agenteId);
-        }
-
-        if (filters.status) {
-            if (!['aberto', 'solucionado'].includes(filters.status)) {
-                throw new Error('Status inválido. Use "aberto" ou "solucionado"');
-            }
-            query = query.where('status', filters.status);
-        }
-
-        if (filters.q) {
-            query = query.where(function() {
-                this.where('titulo', 'ilike', `%${filters.q}%`)
-                    .orWhere('descricao', 'ilike', `%${filters.q}%`);
-            });
-        }
-
-        const result = await query.select('*')
-            .orderBy('id', 'desc'); // Ordenação padrão por id decrescente
-
+        const result = await db('casos').select('*').where(filter);
         return result;
     } catch (error) {
-        console.error('Erro ao buscar casos:', error);
-        throw error;
+        throw new AppError(500, 'Erro ao buscar casos', [error.message]);
+    }
+}
+
+async function findById(id) {
+    try {
+        const result = await db('casos').select('*').where({ id }).first();
+        return result;
+    } catch (error) {
+        throw new AppError(500, 'Erro ao buscar caso', [error.message]);
+    }
+}
+
+async function create(caso) {
+    try {
+        const [newCaso] = await db('casos').insert(caso).returning('*');
+        return newCaso;
+    } catch (error) {
+        throw new AppError(500, 'Erro ao criar caso', [error.message]);
+    }
+}
+
+async function update(id, updatedCaso) {
+    try {
+        const [caso] = await db('casos').update(updatedCaso).where({ id }).returning('*');
+        return caso;
+    } catch (error) {
+        throw new AppError(500, 'Erro ao atualizar caso', [error.message]);
+    }
+}
+
+async function updatePartial(id, partialCaso) {
+    try {
+        const [caso] = await db('casos').update(partialCaso).where({ id }).returning('*');
+        return caso;
+    } catch (error) {
+        throw new AppError(500, 'Erro ao atualizar caso', [error.message]);
+    }
+}
+
+async function remove(id) {
+    try {
+        const rows = await db('casos').del().where({ id });
+        return !!rows;
+    } catch (error) {
+        throw new AppError(500, 'Erro ao excluir caso', [error.message]);
     }
 }
 
 async function filter(term) {
-    const result = await knex('casos')
-        .select('*')
-        .where('titulo', 'ilike', `%${term}%`)
-        .orWhere('descricao', 'ilike', `%${term}%`);
-
-    // console.log(result);
-    return result;
+    try {
+        const result = await db('casos')
+            .select('*')
+            .where('titulo', 'ilike', `%${term}%`)
+            .orWhere('descricao', 'ilike', `%${term}%`);
+        return result;
+    } catch (error) {
+        throw new AppError(500, 'Erro ao buscar casos', [error.message]);
+    }
 }
-
-const findById = (id) => {
-    return knex('casos').where({ id }).first();
-}
-
-const create = async (data) => {
-    const novoCaso = {
-        ...data
-    };
-    const [casoCriado] = await knex('casos').insert(novoCaso).returning('*');
-    return casoCriado;
-}
-
-const update = async (id, data) => {
-    const [updated] = await knex('casos').where({ id }).update(data).returning('*');
-
-    return updated;
-};
-
-const remove = async (id) => {
-    const caso = await knex('casos').where({id}).first();
-    if(!caso) return null;
-
-    await knex('casos').where({ id }).del();
-    return caso;
-};
 
 module.exports = {
     findAll,
     findById,
     create,
     update,
+    updatePartial,
     remove,
-    filter
+    filter,
 };

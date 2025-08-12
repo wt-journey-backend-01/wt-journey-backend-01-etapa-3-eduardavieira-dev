@@ -1,55 +1,80 @@
-const knex = require('../db/db');
+const db = require('../db/db');
+const { AppError } = require('../utils/errorHandler');
 
-const findAll = async (filter = {}, orderBy = ['id', 'asc']) => {
+async function findAll(filter = {}, orderBy = ['id', 'asc']) {
     try {
-        const result = await knex('agentes')
+        const result = await db('agentes')
             .select('*')
             .where(filter)
             .orderBy(orderBy[0], orderBy[1]);
-        
         return result.map((agente) => ({
             ...agente,
             dataDeIncorporacao: new Date(agente.dataDeIncorporacao).toISOString().split('T')[0],
         }));
     } catch (error) {
-        console.error('Erro ao buscar agentes:', error);
-        throw error;
+        throw new AppError(500, 'Erro ao buscar agentes', [error.message]);
     }
 }
 
-const findById = async (id) => {
-    return await knex('agentes').where({ id }).first();
+async function findById(id) {
+    try {
+        const result = await db('agentes').select('*').where({ id }).first();
+        return result;
+    } catch (error) {
+        throw new AppError(500, 'Erro ao buscar agente', [error.message]);
+    }
 }
 
-const create = async (data) => {
-    const novoAgente = {
-        ...data
-    };
-    const [agenteCriado] = await knex('agentes').insert(novoAgente).returning('*');
-    
-    return agenteCriado;
+async function create(agente) {
+    try {
+        const [newAgente] = await db('agentes').insert(agente).returning('*');
+        return {
+            ...newAgente,
+            dataDeIncorporacao: new Date(agente.dataDeIncorporacao).toISOString().split('T')[0],
+        };
+    } catch (error) {
+        throw new AppError(500, 'Erro ao criar agente', [error.message]);
+    }
 }
 
-const update = async (id, data) => {
-    const [agenteAtualizado] = await knex('agentes').where({ id }).update(data).returning('*');
-    
-    return agenteAtualizado;
-};
+async function update(id, updatedAgente) {
+    try {
+        const [agente] = await db('agentes').update(updatedAgente).where({ id }).returning('*');
+        return {
+            ...agente,
+            dataDeIncorporacao: new Date(agente.dataDeIncorporacao).toISOString().split('T')[0],
+        };
+    } catch (error) {
+        throw new AppError(500, 'Erro ao atualizar agente', [error.message]);
+    }
+}
 
-const remove = async (id) => {
-      const agente = await knex('agentes').where({ id }).first();
+async function updatePartial(id, partialAgente) {
+    try {
+        const [agente] = await db('agentes').update(partialAgente).where({ id }).returning('*');
+        return {
+            ...agente,
+            dataDeIncorporacao: new Date(agente.dataDeIncorporacao).toISOString().split('T')[0],
+        };
+    } catch (error) {
+        throw new AppError(500, 'Erro ao atualizar agente', [error.message]);
+    }
+}
 
-        if (!agente) return null;
-
-        await knex('agentes').where({ id }).del();
-
-        return agente;
-};
+async function remove(id) {
+    try {
+        const rows = await db('agentes').del().where({ id });
+        return !!rows;
+    } catch (error) {
+        throw new AppError(500, 'Erro ao excluir agente', [error.message]);
+    }
+}
 
 module.exports = {
     findAll,
     findById,
     create,
     update,
-    remove
+    updatePartial,
+    remove,
 };

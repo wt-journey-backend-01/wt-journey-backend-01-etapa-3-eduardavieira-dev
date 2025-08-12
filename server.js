@@ -1,23 +1,24 @@
 const express = require('express');
-const app = express();
-const setUpSwagger = require('./docs/swagger');
 const dotenv = require('dotenv');
-const errorHandler = require('./utils/errorHandler');
+const swagger = require('./docs/swagger');
+const agentesRouter = require('./routes/agentesRoutes');
+const casosRouter = require('./routes/casosRoutes');
+const { errorHandler } = require('./utils/errorHandler');
 
 dotenv.config();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Importando as rotas
-const agentesRoutes = require('./routes/agentesRoutes');
-const casosRoutes = require('./routes/casosRoutes');
+// Configurar Swagger ANTES das rotas
+swagger(app);
 
-app.use('/agentes', agentesRoutes);
-app.use('/casos', casosRoutes);
+// Registrar as rotas com seus prefixos corretos
+app.use('/agentes', agentesRouter);
+app.use('/casos', casosRouter);
 
-setUpSwagger(app);
+// Middleware de tratamento de erros deve vir por último
 app.use(errorHandler);
 
 app.listen(PORT, () => {

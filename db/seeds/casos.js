@@ -1,32 +1,31 @@
 /**
  * @param { import("knex").Knex } knex
- * @returns { Promise<void> } 
+ * @returns { Promise<void> }
  */
 exports.seed = async function (knex) {
-  // Limpa as tabelas antes de inserir dados novos
-  await knex('casos').del();
-
-  // Insere casos usando IDs conhecidos dos agentes
-  await knex('casos').insert([
-    {
-      titulo: 'Roubo no banco',
-      descricao: 'Roubo a mão armada no banco central',
-      status: 'aberto',
-      agente_id: 1 // João Gonçalves (investigador)
-    },
-    {
-      titulo: 'Furto de veículos',
-      descricao: 'Vários veículos furtados na cidade',
-      status: 'solucionado',
-      agente_id: 2 // Ana Pereira (delegada)
-    },
-    {
-      titulo: 'Assalto à residência',
-      descricao: 'Invasão de domicílio com furto de objetos',
-      status: 'aberto',
-      agente_id: 1 // João Gonçalves (investigador)
-    }
-  ]);
-  
-  console.log('✅ Casos inseridos com sucesso!');
+    // Deletes ALL existing entries
+    await knex('casos').del();
+    await knex('casos').insert([
+        {
+            titulo: 'homicidio',
+            descricao:
+                'Disparos foram reportados às 22:33 do dia 10/07/2007 na região do bairro União, resultando na morte da vítima, um homem de 45 anos.',
+            status: 'aberto',
+            agente_id: 3,
+        },
+        {
+            titulo: 'roubo à mão armada',
+            descricao:
+                'Na madrugada de 15/03/2019, dois suspeitos armados invadiram uma loja de conveniência na Av. Brasil, levando cerca de R$ 12.000,00 em dinheiro.',
+            status: 'aberto',
+            agente_id: 2,
+        },
+        {
+            titulo: 'tráfico de drogas',
+            descricao:
+                'Após denúncia anônima, agentes localizaram um ponto de venda de drogas na comunidade do Morro Azul, apreendendo entorpecentes e prendendo dois indivíduos.',
+            status: 'solucionado',
+            agente_id: 1,
+        },
+    ]);
 };

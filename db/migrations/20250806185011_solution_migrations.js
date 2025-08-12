@@ -3,21 +3,20 @@
  * @returns { Promise<void> }
  */
 exports.up = async function (knex) {
-  await knex.schema.createTable('agentes', (table) => {
+    await knex.schema.createTable('agentes', function (table) {
         table.increments('id').primary();
         table.string('nome').notNullable();
         table.date('dataDeIncorporacao').notNullable();
         table.string('cargo').notNullable();
     });
 
-    await knex.schema.createTable('casos', (table) => {
+    await knex.schema.createTable('casos', function (table) {
         table.increments('id').primary();
         table.string('titulo').notNullable();
-        table.string('descricao').notNullable();
-        table.enum('status', ['aberto', 'solucionado']).notNullable();
+        table.text('descricao').notNullable();
+        table.enum('status', ['aberto', 'solucionado']);
         table
             .integer('agente_id')
-            .unsigned()
             .references('id')
             .inTable('agentes')
             .notNullable()

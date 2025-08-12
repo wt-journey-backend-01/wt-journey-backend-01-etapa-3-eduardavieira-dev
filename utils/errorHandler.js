@@ -1,35 +1,34 @@
+class AppError extends Error {
+    constructor(statusCode, message, errors = []) {
+        super(message);
+        this.statusCode = statusCode;
+        this.errors = errors.map((err) => err.msg || err);
+    }
+}
+
+const validate = (schema, req) => {
+    const result = schema.safeParse(req);
+
+    if (!result.success) {
+        const errors = JSON.parse(result.error).map((err) => err.message);
+        throw new AppError(400, 'Parâmetros inválidos', errors || []);
+    }
+};
+
 const errorHandler = (err, req, res, next) => {
-    console.error(err.stack);
+    const statusCode = err.statusCode || 500;
+    const message = err.message || 'Erro interno no servidor';
+    const errors = err.errors || [];
 
-    if (res.headersSent) {
-        return next(err);
-    }
-
-    // Zod
-    if (err instanceof require('zod').ZodError) {
-        return res.status(400).json({
-            status: 'error',
-            statusCode: 400,
-            message: 'Dados inválidos.',
-            errors: err.errors
-        });
-    }
-
-    // ApiError personalizado
-    if (err.name === 'ApiError') {
-        return res.status(err.statusCode || 500).json({
-            status: 'error',
-            statusCode: err.statusCode || 500,
-            message: err.message || 'Erro inesperado.'
-        });
-    }
-
-    // Genérico
-    return res.status(500).json({
-        status: 'error',
-        statusCode: 500,
-        message: 'Erro interno do servidor.'
+    res.status(statusCode).json({
+        status: statusCode,
+        message,
+        errors,
     });
 };
 
-module.exports = errorHandler;
+module.exports = {
+    errorHandler,
+    validate,
+    AppError,
+};

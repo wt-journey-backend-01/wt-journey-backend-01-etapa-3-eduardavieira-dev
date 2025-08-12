@@ -1,262 +1,165 @@
 const casosRepository = require('../repositories/casosRepository');
 const agentesRepository = require('../repositories/agentesRepository');
-const { casoSchema, formatZodError } = require('../utils/casosValidation');
-const { ZodError } = require('zod');
+const { AppError } = require('../utils/errorHandler');
 
-class ApiError extends Error {
-    constructor(message, statusCode = 500) {
-        super(message);
-        this.name = 'ApiError';
-        this.statusCode = statusCode;
+async function getAllCasos(req, res) {
+    const agenteId = req.query.agente_id;
+    const status = req.query.status;
+    const filter = {};
+
+    if (agenteId) {
+        filter.agente_id = agenteId;
     }
+
+    if (status) {
+        filter.status = status;
+    }
+
+    const casos = await casosRepository.findAll(filter);
+
+    res.json(casos);
 }
 
-const getCasos = async (req, res, next) => {
-  try {
-    const { agente_id, status, q } = req.query;
-    
-    // Validate agente_id if provided
-    if (agente_id) {
-      const idNum = Number(agente_id);
-      if (!Number.isInteger(idNum)) {
-        throw new ApiError('O parâmetro agente_id deve ser um número inteiro', 400);
-      }
+async function getCasosById(req, res) {
+    const id = Number(req.params.id);
+
+    if (!id || !Number.isInteger(id)) {
+        throw new AppError(404, 'Id inválido');
     }
 
-    // Validate status if provided
-    if (status && !['aberto', 'solucionado'].includes(status)) {
-      throw new ApiError('Status inválido. Use "aberto" ou "solucionado"', 400);
+    const caso = await casosRepository.findById(id);
+
+    if (!caso) {
+        throw new AppError(404, 'Nenhum caso encontrado para o id especificado');
     }
 
-    const filtros = { agente_id, status, q };
+    res.json(caso);
+}
 
-    const casos = await casosRepository.findAll(filtros);
+async function createCaso(req, res) {
+    const agenteId = req.body.agente_id;
 
-    if (casos.length === 0) {
-      if (agente_id || status || q) {
-        throw new ApiError(`Nenhum caso encontrado com os filtros fornecidos.`, 404);
-      } else {
-        throw new ApiError(`Nenhum caso encontrado.`, 404);
-      }
-    }
+    if (agenteId) {
+        const agente = await agentesRepository.findById(agenteId);
 
-    res.status(200).json(casos);
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return next(error);
-    }
-    next(new ApiError('Erro ao buscar casos', 500));
-  }
-};
-
-
-const getCasoById = async (req, res, next) => {
-    const { id } = req.params;
-    try {
-        // Verifica se o id é um número inteiro válido
-        const casoId = Number(id);
-        if (!Number.isInteger(casoId)) {
-            return res.status(400).json({ message: 'O parâmetro id deve ser um número inteiro.' });
-        }
-
-        const caso = await casosRepository.findById(casoId);
-        if (!caso) {
-            throw new ApiError('Caso não encontrado', 404);
-        }
-        res.status(200).json(caso);
-    } catch (error) {
-        if (error instanceof ApiError) {
-            return next(error);
-        }
-        next(new ApiError('Erro ao buscar caso', 500));
-    }
-};
-
-const createCaso = async (req, res, next) => {
-    try {
-        const { titulo, descricao, status, agente_id } = req.body;
-
-        const dadosRecebidos = {
-            titulo,
-            descricao,
-            status: status || 'aberto',
-            agente_id
-        };
-
-        // Validar primeiro com Zod
-        const data = casoSchema.parse(dadosRecebidos);
-        
-        const agenteExiste = await agentesRepository.findById(data.agente_id);
-        if (!agenteExiste) {
-            throw new ApiError('Agente não encontrado. Verifique se o agente_id é válido.', 404);
-        }
-
-        const novoCaso = await casosRepository.create(data);
-        res.status(201).json(novoCaso);
-    } catch (error) {
-        if (error instanceof ZodError) {
-            const formattedError = formatZodError(error);
-            return res.status(400).json(formattedError);
-        }
-        if (error instanceof ApiError) {
-            return next(error);
-        }
-        next(new ApiError('Erro ao criar caso', 500));
-    }
-};
-const updateCaso = async (req, res, next) => {
-    const { id } = req.params;
-    try {
-        // Rejeitar se payload contém id
-        if ('id' in req.body) {
-            return res.status(400).json({ message: 'Não é permitido alterar o campo id' });
-        }
-
-        const { titulo, descricao, status, agente_id } = req.body;
-
-        const dadosRecebidos = {
-            titulo,
-            descricao,
-            status,
-            agente_id
-        };
-
-        // Validar primeiro com Zod
-        const data = casoSchema.parse(dadosRecebidos);
-        
-        // Verificar se o agente existe se agente_id foi fornecido
-        const agenteExiste = await agentesRepository.findById(data.agente_id);
-        if (!agenteExiste) {
-            throw new ApiError('Agente não encontrado. Verifique se o agente_id é válido.', 404);
-        }
-
-        const casoAtualizado = await casosRepository.update(id, data);
-
-        if (!casoAtualizado) {
-            throw new ApiError('Caso não encontrado', 404);
-        }
-        res.status(200).json({
-            message: 'Caso atualizado com sucesso',
-            data: casoAtualizado
-        });
-    } catch (error) {
-        if (error instanceof ZodError) {
-            const formattedError = formatZodError(error);
-            return res.status(400).json(formattedError);
-        }
-        if (error instanceof ApiError) {
-            return next(error);
-        }
-        next(new ApiError('Erro ao atualizar caso', 500));
-    }
-};
-
-const partialUpdateCaso = async (req, res, next) => {
-    const { id } = req.params;
-    try {
-        // Rejeitar se payload contém id
-        if ('id' in req.body) {
-            return res.status(400).json({ message: 'Não é permitido alterar o campo id' });
-        }
-
-        const { titulo, descricao, status, agente_id } = req.body;
-
-        const dadosRecebidos = {};
-        if (titulo !== undefined) dadosRecebidos.titulo = titulo;
-        if (descricao !== undefined) dadosRecebidos.descricao = descricao;
-        if (status !== undefined) dadosRecebidos.status = status;
-        if (agente_id !== undefined) dadosRecebidos.agente_id = agente_id;
-
-        // Validar primeiro com Zod
-        const data = casoSchema.partial().parse(dadosRecebidos);
-
-        // Verificar se o agente existe se agente_id foi fornecido
-        if (agente_id !== undefined) {
-            const agenteExiste = await agentesRepository.findById(agente_id);
-            if (!agenteExiste) {
-                throw new ApiError('Agente não encontrado. Verifique se o agente_id é válido.', 404);
-            }
-        }
-
-        const casoAtualizado = await casosRepository.update(id, data);
-
-        if (!casoAtualizado) {
-            return next(new ApiError('Caso não encontrado', 404));
-        }
-
-        res.status(200).json({
-            message: 'Caso atualizado com sucesso',
-            data: casoAtualizado
-        });
-
-    } catch (error) {
-        if (error instanceof ZodError) {
-            const formattedError = formatZodError(error);
-            return res.status(400).json(formattedError);
-        }
-        if (error instanceof ApiError) {
-            return next(error);
-        }
-        next(new ApiError('Erro ao atualizar caso', 500));
-    }
-};
-
-
-const deleteCaso = async (req, res, next) => {
-    const { id } = req.params;
-    try {
-        const casoDeletado = await casosRepository.remove(id);
-        if (!casoDeletado) {
-            throw new ApiError('Caso não encontrado', 404);
-        }
-        res.status(204).send();
-    } catch (error) {
-        if (error instanceof ApiError) {
-            return next(error);
-        }
-        next(new ApiError('Erro ao deletar caso', 500));
-    }
-};
-
-const getAgenteDoCaso = async (req, res, next) => {
-    const { id } = req.params;
-    try {
-        const caso = await casosRepository.findById(id);
-        if (!caso) {
-            throw new ApiError(`Caso com ID ${id} não encontrado`, 404);
-        }
-
-        const agente = await agentesRepository.findById(caso.agente_id);
         if (!agente) {
-            throw new ApiError(`Agente com ID ${caso.agente_id} não encontrado para o caso ${id}`, 404);
+            throw new AppError(404, 'Nenhum agente encontrado para o id especificado');
         }
-        
-        res.status(200).json(agente);
-    } catch (error) {
-        if (error instanceof ApiError) {
-            return next(error);
-        }
-        next(new ApiError('Erro ao buscar agente do caso', 500));
+    } else {
+        throw new AppError(404, 'Nenhum agente encontrado para o id especificado');
     }
-};
+
+    const novoCaso = await casosRepository.create(req.body);
+
+    res.status(201).json(novoCaso);
+}
+
+async function updateCaso(req, res) {
+    const id = req.params.id;
+    const agenteId = req.body.agente_id;
+
+    if (agenteId) {
+        const agente = await agentesRepository.findById(agenteId);
+
+        if (!agente) {
+            throw new AppError(404, 'Nenhum agente encontrado para o id especificado');
+        }
+    } else {
+        throw new AppError(404, 'Nenhum agente encontrado para o id especificado');
+    }
+
+    const caso = await casosRepository.findById(id);
+
+    if (!caso) {
+        throw new AppError(404, 'Nenhum caso encontrado para o id especificado');
+    }
+
+    const updatedCaso = await casosRepository.update(id, req.body);
+
+    res.status(200).json(updatedCaso);
+}
+
+async function updatePartialCaso(req, res) {
+    const id = req.params.id;
+
+    if (req.body.id) {
+        throw new AppError(400, 'Parâmetros inválidos', ['O id não pode ser atualizado']);
+    }
+
+    const agenteId = req.body.agente_id;
+
+    if (agenteId) {
+        const agente = await agentesRepository.findById(agenteId);
+
+        if (!agente) {
+            throw new AppError(404, 'Nenhum agente encontrado para o id especificado');
+        }
+    }
+
+    const caso = await casosRepository.findById(id);
+
+    if (!caso) {
+        throw new AppError(404, 'Nenhum caso encontrado para o id especificado');
+    }
+
+    const updatedCaso = await casosRepository.updatePartial(id, req.body);
+
+    res.status(200).json(updatedCaso);
+}
+
+async function deleteCaso(req, res) {
+    const id = req.params.id;
+    const caso = await casosRepository.findById(id);
+
+    if (!caso) {
+        throw new AppError(404, 'Nenhum caso encontrado para o id especificado');
+    }
+
+    const result = await casosRepository.remove(id);
+
+    if (!result) {
+        throw new AppError(500, 'Erro ao remover o agente');
+    }
+
+    res.status(204).send();
+}
+
+async function getAgenteByCasoId(req, res) {
+    const casoId = req.params.id;
+    const caso = await casosRepository.findById(casoId);
+
+    if (!caso) {
+        throw new AppError(404, 'Nenhum caso encontrado para o id especificado');
+    }
+
+    const agenteId = caso.agente_id;
+    const agente = await agentesRepository.findById(agenteId);
+
+    if (!agente) {
+        throw new AppError(404, 'Nenhum agente encontrado para o agente_id especificado');
+    }
+
+    res.status(200).json(agente);
+}
 
 async function filter(req, res) {
     const term = req.query.q;
-
     const casos = await casosRepository.filter(term);
+
     if (casos.length === 0) {
-        throw new ApiError('Nenhum caso encontrado para a busca especificada', 404);
+        throw new AppError(404, 'Nenhum caso encontrado para a busca especificada');
     }
+
     res.json(casos);
 }
 
 module.exports = {
-    getCasos,
-    getCasoById,
+    getAllCasos,
+    getCasosById,
     createCaso,
     updateCaso,
-    partialUpdateCaso,
+    updatePartialCaso,
     deleteCaso,
-    getAgenteDoCaso,
-    filter
+    getAgenteByCasoId,
+    filter,
 };
