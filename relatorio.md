@@ -1,222 +1,141 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 1 créditos restantes para usar o sistema de feedback AI.
+Você tem 0 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para eduardavieira-dev:
 
 Nota final: **100.0/100**
 
-Olá, eduardavieira-dev! 👋🚀
+Olá, eduardavieira-dev! 👋✨
 
-Primeiramente, parabéns pelo excelente trabalho! 🎉 Você alcançou 100 pontos na entrega dos requisitos obrigatórios e ainda conseguiu implementar alguns recursos bônus, como a filtragem de casos por status e por agente. Isso mostra que você não só entendeu o desafio, mas foi além — muito bem! 👏👏
-
----
-
-## 🎯 O que está muito bem feito
-
-- **Arquitetura modular:** Seu projeto está muito bem organizado, com separação clara entre controllers, repositories, rotas, e utils. Isso facilita a manutenção e escalabilidade.
-- **Configuração do banco e Knex:** O `knexfile.js` está configurado corretamente para o ambiente de desenvolvimento e CI, apontando para o host e porta certos, e usando variáveis de ambiente para credenciais — isso é fundamental para segurança e flexibilidade.
-- **Migrations e seeds funcionando:** Você criou a migration para as tabelas `agentes` e `casos` com os campos certos e relações adequadas, e os seeds inserem dados iniciais coerentes.
-- **Tratamento de erros customizado:** Seu middleware `errorHandler` e o uso da classe `AppError` para lançar erros com status e mensagens personalizadas está muito bem estruturado.
-- **Validações e status codes corretos:** Você implementou validações usando middlewares e retorna os códigos HTTP corretos (200, 201, 204, 400, 404, 500) conforme a situação.
-- **Filtros simples funcionando:** A filtragem por `status` e `agente_id` nos casos está perfeita, assim como a ordenação básica por data de incorporação dos agentes.
+Primeiramente, parabéns pelo seu esforço e dedicação! 🎉 Você entregou uma API robusta, com todos os endpoints principais funcionando perfeitamente e ainda conseguiu implementar filtros bônus para casos por status e agente. Isso mostra que você foi além do básico e isso é incrível! 🚀👏
 
 ---
 
-## 🔍 Pontos para atenção e melhoria (vamos juntos destrinchar!)
+## O que você mandou muito bem! 🎯
 
-### 1. Falta de implementação dos endpoints bônus mais complexos
-
-**Problema detectado:**  
-Você passou nos testes básicos e em alguns bônus simples, mas não implementou (ou não completou) funcionalidades extras importantes como:
-
-- Buscar o agente responsável por um caso via endpoint `/casos/:id/agente`
-- Buscar casos de um agente via `/agentes/:id/casos`
-- Filtrar casos por palavras-chave no título e descrição
-- Ordenar agentes por data de incorporação em ordem crescente e decrescente
-- Mensagens de erro customizadas para argumentos inválidos
+- Sua estrutura de pastas está **perfeita** e segue exatamente o padrão esperado para um projeto Node.js com Express e Knex, o que facilita muito a manutenção e escalabilidade.  
+- O uso do Knex para manipulação do banco está muito bem feito, com tratamento de erros personalizado (`AppError`) em todos os repositórios.  
+- As migrations e seeds estão bem configuradas, garantindo que as tabelas e dados iniciais estejam corretos.  
+- Os controllers estão organizados e fazem validações importantes, como verificar se o agente existe antes de criar ou atualizar um caso.  
+- Você implementou os filtros básicos nos endpoints, e os retornos de status HTTP estão adequados (200, 201, 204, 400, 404, 500).  
+- A documentação Swagger está presente e detalhada, o que é fundamental para APIs profissionais.  
+- Os testes bônus que você passou mostram que você conseguiu implementar filtros importantes nos casos, o que é um diferencial!  
 
 ---
 
-### Análise detalhada do problema:
+## Pontos para você ficar atento e melhorar ainda mais 🚦
 
-- No arquivo `controllers/casosController.js`, a função `getAgenteByCasoId` está definida, mas no arquivo de rotas `casosRoutes.js`, o parâmetro do path está como `:id` e não `:caso_id`. Isso causa uma desarmonia na rota, pois no controller você tenta acessar `req.params.caso_id`, que estará `undefined`.
+### 1. Busca do agente responsável por um caso (`GET /casos/:id/agente`)
+
+No seu `casosController.js`, percebi que a função `getAgenteByCasoId` está usando `req.params.caso_id` para pegar o ID do caso:
 
 ```js
-// No controller:
-const casoId = req.params.caso_id; // undefined, pois na rota o parâmetro é ':id'
+async function getAgenteByCasoId(req, res) {
+    const casoId = req.params.caso_id;
+    // ...
+}
+```
 
-// Na rota:
+Porém, na rota você definiu o parâmetro como `:id`:
+
+```js
 router.get('/:id/agente', casosController.getAgenteByCasoId);
 ```
 
-**Solução:**  
-Alinhe o nome do parâmetro para que seja o mesmo em ambos os arquivos. Por exemplo:
+**Causa raiz:** Essa discrepância faz com que `casoId` seja `undefined`, e a busca pelo caso falhe, impedindo que o agente seja retornado.
+
+**Como corrigir:** Altere para usar `req.params.id` no controller, para bater com a rota:
 
 ```js
-// Em casosRoutes.js
-router.get('/:caso_id/agente', casosController.getAgenteByCasoId);
-
-// Ou, altere no controller para:
-const casoId = req.params.id;
-```
-
-Esse pequeno detalhe impede que a busca pelo agente responsável funcione corretamente.
-
----
-
-- Para o endpoint `/agentes/:id/casos`, a rota está definida corretamente em `agentesRoutes.js` e o controller chama `casosRepository.findAll({ agente_id: agenteId })`, que parece coerente. Mas, segundo seu feedback, esse teste não passou, o que sugere que talvez o filtro no repository não esteja tratando o filtro de forma robusta (ex: filtro por objeto direto pode falhar se o filtro estiver vazio ou mal formatado).
-
-No seu `casosRepository.js`:
-
-```js
-async function findAll(filter = {}) {
-    try {
-        let query = db('casos').select('*');
-        
-        if (Object.keys(filter).length > 0) {
-            query = query.where(filter);
-        }
-        
-        const result = await query;
-        return result;
-    } catch (error) {
-        throw new AppError(500, 'Erro ao buscar casos', [error.message]);
-    }
+async function getAgenteByCasoId(req, res) {
+    const casoId = req.params.id; // Corrigido aqui
+    const caso = await casosRepository.findById(casoId);
+    // resto do código...
 }
 ```
 
-Esse uso de `.where(filter)` funciona para filtros simples, mas pode não funcionar bem para filtros mais complexos ou quando o filtro é vazio. Para garantir, você pode melhorar o filtro para tratar cada campo explicitamente, assim:
+---
 
-```js
-if (filter.agente_id) {
-    query = query.where('agente_id', filter.agente_id);
-}
-if (filter.status) {
-    query = query.where('status', filter.status);
-}
-```
+### 2. Endpoint para buscar casos de um agente (`GET /agentes/:id/casos`)
 
-Isso deixa o filtro mais explícito e evita problemas futuros com filtros compostos.
+Você implementou essa rota e controller, mas o teste bônus não passou para essa funcionalidade. Olhando no seu código, o controller `getCasosByAgenteId` parece correto, mas vale revisar se o repositório de casos suporta filtro por `agente_id` (que está correto).
+
+Aqui, o ponto pode estar na documentação Swagger ou no uso dos parâmetros, mas como você já tem o filtro implementado no repositório, sugiro revisar se o endpoint está sendo testado corretamente e se o parâmetro `id` está sendo passado como número (não string).
 
 ---
 
-- Sobre a filtragem por palavras-chave no título e descrição (`casosRepository.filter`), você implementou a função, mas não há rota correspondente que chame essa função no controller, ou a rota `/casos/search` não está chamando o método certo.
+### 3. Filtros avançados para agentes por data de incorporação com ordenação
 
-No `casosRoutes.js`:
+Você já implementou filtros simples para agentes por `cargo` e ordenação por `dataDeIncorporacao` (asc e desc), mas os testes bônus indicam que a filtragem complexa por data de incorporação com sorting não passou.
 
-```js
-router.get('/search', casosController.filter);
-```
-
-No `casosController.js`, a função `filter` está implementada, mas você precisa garantir que ela está sendo testada corretamente e que o filtro está funcionando.
-
----
-
-- Para a ordenação dos agentes por data de incorporação (`sort` query param), no controller você tem:
+No seu `agentesRepository.js`, você tem:
 
 ```js
 const orderByMapping = {
     dataDeIncorporacao: ['dataDeIncorporacao', 'asc'],
     '-dataDeIncorporacao': ['dataDeIncorporacao', 'desc'],
 };
-
-let orderBy = orderByMapping[sort];
 ```
 
-Isso está correto, mas você precisa garantir que o valor de `sort` está vindo exatamente como `dataDeIncorporacao` ou `-dataDeIncorporacao`. Além disso, no repository, o método `findAll` já trata o `orderBy` assim:
+E no controller:
 
 ```js
-if (orderBy && orderBy.length === 2) {
-    query = query.orderBy(orderBy[0], orderBy[1]);
+let orderBy = orderByMapping[sort];
+const agentes = await agentesRepository.findAll(filter, orderBy);
+```
+
+Isso está correto, mas sugiro verificar se o parâmetro `sort` está chegando exatamente como esperado e se o banco está interpretando a ordenação corretamente.
+
+---
+
+### 4. Mensagens de erro customizadas para argumentos inválidos
+
+Seus erros estão bem tratados com `AppError`, mas os testes bônus indicam que mensagens customizadas específicas para argumentos inválidos de agente e caso poderiam estar mais detalhadas.
+
+Por exemplo, no seu `updatePartialCaso`, você lança erro para `id` no body:
+
+```js
+if (req.body.id) {
+    throw new AppError(400, 'Parâmetros inválidos', ['O id não pode ser atualizado']);
 }
 ```
 
-Então, essa parte parece ok, mas fique atento a possíveis valores inválidos no `sort` que podem causar falha silenciosa.
+Isso é ótimo! Mas vale revisar se todas as validações estão retornando mensagens claras e específicas, e se o middleware de validação (`newAgenteValidation`, `newCasoValidation`, etc.) está cobrindo todos os casos.
 
 ---
 
-### 2. Pequenos ajustes para melhorar robustez e clareza
+## Dicas e recursos para você continuar arrasando! 📚✨
 
-- No controller `casosController.js`, na função `getAgenteByCasoId`, além do problema do parâmetro, você lança erro 404 se não encontrar o caso ou o agente, mas a mensagem do erro para agente não encontrado fala "Nenhum agente encontrado para o agente_id especificado". Seria interessante padronizar as mensagens para mais clareza e consistência.
+- Para entender melhor como lidar com parâmetros de rota e garantir que eles sejam usados corretamente, confira este vídeo sobre manipulação de requisições no Express.js:  
+  https://youtu.be/RSZHvQomeKE
 
-- No método `deleteCaso`, a mensagem de erro em caso de falha na remoção ainda cita "Erro ao remover o agente", o que é confuso. Ajuste para:
+- Para aprofundar na criação de migrations e seeds com Knex, o que é fundamental para garantir que seu banco esteja sempre no estado esperado:  
+  https://knexjs.org/guide/migrations.html  
+  http://googleusercontent.com/youtube.com/knex-seeds
 
-```js
-throw new AppError(500, 'Erro ao remover o caso');
-```
-
----
-
-## 📚 Recursos para você aprofundar e corrigir esses pontos:
-
-- Para entender melhor sobre rotas e parâmetros em Express.js, veja este vídeo que explica como lidar com parâmetros dinâmicos:  
-  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
-
-- Para aprimorar o uso do Knex.js, principalmente filtros e ordenações, recomendo a documentação oficial:  
-  https://knexjs.org/guide/query-builder.html
-
-- Para aprender a criar mensagens de erro claras e padronizadas na API, e usar corretamente os status HTTP 400 e 404, veja:  
+- Para garantir mensagens de erro claras e tratamento de erros personalizados, este artigo sobre status HTTP 400 e 404 vai te ajudar a entender melhor boas práticas:  
   https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
   https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404
 
-- Caso queira reforçar o entendimento sobre validação e tratamento de erros em APIs Express, este vídeo é ótimo:  
-  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
+- E para organizar ainda mais seu projeto, se quiser reforçar conceitos de arquitetura MVC e modularização em Node.js, recomendo:  
+  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
 
 ---
 
-## 🗺️ Estrutura do projeto
+## Resumo rápido dos pontos para focar 👀
 
-Sua estrutura de diretórios está perfeita e segue o padrão esperado:
-
-```
-.
-├── package.json
-├── server.js
-├── knexfile.js
-├── INSTRUCTIONS.md
-│
-├── db/
-│   ├── migrations/
-│   ├── seeds/
-│   └── db.js
-│
-├── routes/
-│   ├── agentesRoutes.js
-│   └── casosRoutes.js
-│
-├── controllers/
-│   ├── agentesController.js
-│   └── casosController.js
-│
-├── repositories/
-│   ├── agentesRepository.js
-│   └── casosRepository.js
-│
-└── utils/
-    └── errorHandler.js
-```
-
-Manter essa organização vai te ajudar muito em projetos futuros! 🚀
+- Corrigir o parâmetro de rota usado em `getAgenteByCasoId` para `req.params.id`.
+- Revisar o endpoint de casos do agente para garantir que o parâmetro `id` seja tratado corretamente.
+- Validar o funcionamento da ordenação por `dataDeIncorporacao` no filtro de agentes.
+- Garantir que todas as mensagens de erro estejam claras, específicas e consistentes.
+- Revisar os middlewares de validação para cobrir todos os casos de dados inválidos.
 
 ---
 
-## 🔑 Resumo rápido para focar:
+Eduardavieira-dev, seu projeto está muito sólido e você demonstrou domínio dos conceitos essenciais de API REST com Express e PostgreSQL usando Knex! 🎉 Continue assim, aprimorando esses detalhes que vão deixar sua API ainda mais profissional e pronta para o mundo real. Estou aqui torcendo pelo seu sucesso e disponível para qualquer dúvida! 🚀💙
 
-- Corrija o nome do parâmetro na rota `/casos/:id/agente` para alinhar com o controller (`:caso_id` ou `:id`).
-- Garanta que o filtro no `casosRepository.findAll` trate os filtros explicitamente para evitar falhas silenciosas.
-- Implemente ou ajuste os endpoints bônus que buscam casos por agente e agentes por caso.
-- Padronize as mensagens de erro para mais clareza e ajuste pequenos detalhes como mensagem em `deleteCaso`.
-- Verifique o tratamento do parâmetro `sort` para ordenação dos agentes e valide os valores possíveis.
-- Teste o endpoint de busca por palavras-chave (`/casos/search`) para garantir que está funcionando e integrado.
-
----
-
-Edu, você está muito próximo da perfeição! 🌟 O que falta são ajustes finos e o toque final nos extras que vão deixar sua API ainda mais completa e profissional. Continue firme, você está no caminho certo! 💪🚓
-
-Se precisar, volte aqui para tirar dúvidas ou revisar juntos esses pontos. Estou torcendo pelo seu sucesso! 🎯
-
-Abraços e até a próxima! 👋✨
+Um abraço virtual e até a próxima revisão! 🤗👨‍💻👩‍💻
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
