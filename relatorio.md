@@ -1,262 +1,222 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 2 créditos restantes para usar o sistema de feedback AI.
+Você tem 1 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para eduardavieira-dev:
 
-Nota final: **24.2/100**
+Nota final: **100.0/100**
 
-# Feedback para a eduardavieira-dev 🚔✨
+Olá, eduardavieira-dev! 👋🚀
 
-Olá, Eduarda! Primeiramente, quero parabenizá-la pelo esforço e dedicação ao avançar para a etapa de persistência com PostgreSQL e Knex.js! 🎉 Você estruturou muito bem seu projeto, com uma organização de arquivos clara e modular, o que é essencial para projetos escaláveis. Além disso, vi que você implementou vários recursos extras, como filtros complexos e mensagens de erro customizadas, o que mostra que você está indo além do básico. Isso é incrível! 👏👏
-
----
-
-## O que você já mandou muito bem! 🌟
-
-- **Arquitetura modular:** Separou direitinho controllers, repositories, rotas e utils.
-- **Uso do Knex:** Configurou o Knex com migrations e seeds, e está usando o Query Builder para as operações no banco.
-- **Swagger:** Documentou bem suas rotas, o que é ótimo para manutenção e testes.
-- **Validações e tratamento de erros:** Implementou validações usando middlewares e lançou erros customizados com mensagens claras.
-- **Filtros e buscas:** Implementou endpoints para filtrar casos por status, agente e termos, além de buscar o agente responsável por um caso.
-- **Uso correto dos status HTTP:** Em geral, você está retornando os códigos corretos para as operações (201, 204, 404, 400).
-
-Esses pontos são fundamentais para uma API robusta e você já tem uma base muito boa! 🚀
+Primeiramente, parabéns pelo excelente trabalho! 🎉 Você alcançou 100 pontos na entrega dos requisitos obrigatórios e ainda conseguiu implementar alguns recursos bônus, como a filtragem de casos por status e por agente. Isso mostra que você não só entendeu o desafio, mas foi além — muito bem! 👏👏
 
 ---
 
-## Agora, vamos conversar sobre alguns pontos que precisam de atenção para destravar o funcionamento completo da sua API:
+## 🎯 O que está muito bem feito
 
-### 1. **Conexão com o banco e configuração do Knex**
-
-Ao analisar seu `knexfile.js`, percebi que a configuração do banco está apontando para a porta **5436** localmente:
-
-```js
-development: {
-    client: 'pg',
-    connection: {
-        host: '127.0.0.1',
-        port: 5436,
-        user: process.env.POSTGRES_USER,
-        password: process.env.POSTGRES_PASSWORD,
-        database: process.env.POSTGRES_DB,
-    },
-    // ...
-},
-```
-
-E no seu `docker-compose.yml`, o PostgreSQL está exposto na porta 5436:
-
-```yaml
-ports:
-  - '5436:5432'
-```
-
-Isso está correto, porém é fundamental garantir que:
-
-- Seu container Docker está realmente rodando e aceitando conexões na porta 5436.
-- As variáveis de ambiente `.env` estão definidas corretamente para `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB`.
-- Você executou as migrations e seeds corretamente após subir o container.
-
-**Por que isso é importante?**  
-Se a conexão com o banco não estiver funcionando, nenhuma query vai funcionar, e isso explica porque várias operações (criar, buscar, atualizar, deletar agentes e casos) falham. A raiz dos seus problemas está aqui! 🔍
-
-**Dica:** Tente rodar o comando abaixo para garantir que o container está ativo:
-
-```bash
-docker compose --env-file .env up -d
-```
-
-Depois, rode as migrations e seeds:
-
-```bash
-npx knex migrate:latest
-npx knex seed:run
-```
-
-Se você não fez isso, o banco estará vazio ou sem as tabelas, o que impede o funcionamento da API.
+- **Arquitetura modular:** Seu projeto está muito bem organizado, com separação clara entre controllers, repositories, rotas, e utils. Isso facilita a manutenção e escalabilidade.
+- **Configuração do banco e Knex:** O `knexfile.js` está configurado corretamente para o ambiente de desenvolvimento e CI, apontando para o host e porta certos, e usando variáveis de ambiente para credenciais — isso é fundamental para segurança e flexibilidade.
+- **Migrations e seeds funcionando:** Você criou a migration para as tabelas `agentes` e `casos` com os campos certos e relações adequadas, e os seeds inserem dados iniciais coerentes.
+- **Tratamento de erros customizado:** Seu middleware `errorHandler` e o uso da classe `AppError` para lançar erros com status e mensagens personalizadas está muito bem estruturado.
+- **Validações e status codes corretos:** Você implementou validações usando middlewares e retorna os códigos HTTP corretos (200, 201, 204, 400, 404, 500) conforme a situação.
+- **Filtros simples funcionando:** A filtragem por `status` e `agente_id` nos casos está perfeita, assim como a ordenação básica por data de incorporação dos agentes.
 
 ---
 
-### 2. **Migrations: enum 'status' da tabela casos**
+## 🔍 Pontos para atenção e melhoria (vamos juntos destrinchar!)
 
-No seu arquivo de migration `20250811021528_solution_migrations.js`, você criou a tabela `casos` com o campo `status` como enum:
+### 1. Falta de implementação dos endpoints bônus mais complexos
 
-```js
-table.enum('status', ['aberto', 'solucionado']);
-```
+**Problema detectado:**  
+Você passou nos testes básicos e em alguns bônus simples, mas não implementou (ou não completou) funcionalidades extras importantes como:
 
-Porém, você não definiu se ele é `notNullable()` ou se tem um valor padrão.
-
-**Por que isso é importante?**  
-Se o campo `status` não aceitar `null` e não tem valor padrão, ao inserir um caso sem informar o status, o banco pode rejeitar a inserção, gerando erro. Além disso, no seu seed de casos, você sempre fornece o `status`, mas no payload que chega via API, o `status` pode estar faltando.
-
-**Sugestão:** Definir um valor padrão para o campo `status`, assim:
-
-```js
-table.enum('status', ['aberto', 'solucionado']).notNullable().defaultTo('aberto');
-```
-
-Isso ajuda a evitar erros na criação de casos quando o status não for enviado.
+- Buscar o agente responsável por um caso via endpoint `/casos/:id/agente`
+- Buscar casos de um agente via `/agentes/:id/casos`
+- Filtrar casos por palavras-chave no título e descrição
+- Ordenar agentes por data de incorporação em ordem crescente e decrescente
+- Mensagens de erro customizadas para argumentos inválidos
 
 ---
 
-### 3. **Verificação de IDs nos controllers — atenção ao uso de parâmetros**
+### Análise detalhada do problema:
 
-No seu `casosController.js`, na função `getAgenteByCasoId`, você está buscando o ID do caso com o parâmetro `req.params.caso_id`:
-
-```js
-async function getAgenteByCasoId(req, res) {
-    const casoId = req.params.caso_id;
-    // ...
-}
-```
-
-Mas no seu arquivo de rotas `casosRoutes.js`, a rota está definida como:
+- No arquivo `controllers/casosController.js`, a função `getAgenteByCasoId` está definida, mas no arquivo de rotas `casosRoutes.js`, o parâmetro do path está como `:id` e não `:caso_id`. Isso causa uma desarmonia na rota, pois no controller você tenta acessar `req.params.caso_id`, que estará `undefined`.
 
 ```js
+// No controller:
+const casoId = req.params.caso_id; // undefined, pois na rota o parâmetro é ':id'
+
+// Na rota:
 router.get('/:id/agente', casosController.getAgenteByCasoId);
 ```
 
-Ou seja, o parâmetro correto é `id`, não `caso_id`. Isso vai fazer com que `casoId` seja `undefined` e a busca falhe.
-
-**Corrija para:**
+**Solução:**  
+Alinhe o nome do parâmetro para que seja o mesmo em ambos os arquivos. Por exemplo:
 
 ```js
+// Em casosRoutes.js
+router.get('/:caso_id/agente', casosController.getAgenteByCasoId);
+
+// Ou, altere no controller para:
 const casoId = req.params.id;
 ```
 
-Esse pequeno detalhe impede que você consiga buscar o agente responsável por um caso, causando erros 404.
+Esse pequeno detalhe impede que a busca pelo agente responsável funcione corretamente.
 
 ---
 
-### 4. **Validação de IDs numéricos**
+- Para o endpoint `/agentes/:id/casos`, a rota está definida corretamente em `agentesRoutes.js` e o controller chama `casosRepository.findAll({ agente_id: agenteId })`, que parece coerente. Mas, segundo seu feedback, esse teste não passou, o que sugere que talvez o filtro no repository não esteja tratando o filtro de forma robusta (ex: filtro por objeto direto pode falhar se o filtro estiver vazio ou mal formatado).
 
-No seu `casosController.js` na função `getCasosById`, você faz:
+No seu `casosRepository.js`:
 
 ```js
-const id = Number(req.params.id);
-
-if (!id || !Number.isInteger(id)) {
-    throw new AppError(404, 'Id inválido');
+async function findAll(filter = {}) {
+    try {
+        let query = db('casos').select('*');
+        
+        if (Object.keys(filter).length > 0) {
+            query = query.where(filter);
+        }
+        
+        const result = await query;
+        return result;
+    } catch (error) {
+        throw new AppError(500, 'Erro ao buscar casos', [error.message]);
+    }
 }
 ```
 
-Aqui, se o ID for `0`, ele será considerado inválido, pois `!id` será `true`. Como IDs normalmente começam em 1, isso não deve ser um problema, mas é mais seguro validar assim:
+Esse uso de `.where(filter)` funciona para filtros simples, mas pode não funcionar bem para filtros mais complexos ou quando o filtro é vazio. Para garantir, você pode melhorar o filtro para tratar cada campo explicitamente, assim:
 
 ```js
-const id = Number(req.params.id);
-
-if (!Number.isInteger(id) || id <= 0) {
-    throw new AppError(404, 'Id inválido');
+if (filter.agente_id) {
+    query = query.where('agente_id', filter.agente_id);
+}
+if (filter.status) {
+    query = query.where('status', filter.status);
 }
 ```
 
-Isso evita confusões e garante que o ID seja um inteiro positivo.
+Isso deixa o filtro mais explícito e evita problemas futuros com filtros compostos.
 
 ---
 
-### 5. **Tratamento de erros no `deleteCaso`**
+- Sobre a filtragem por palavras-chave no título e descrição (`casosRepository.filter`), você implementou a função, mas não há rota correspondente que chame essa função no controller, ou a rota `/casos/search` não está chamando o método certo.
 
-No seu `deleteCaso` do `casosController.js`, você lança erro 500 com a mensagem "Erro ao remover o agente":
+No `casosRoutes.js`:
 
 ```js
-if (!result) {
-    throw new AppError(500, 'Erro ao remover o agente');
+router.get('/search', casosController.filter);
+```
+
+No `casosController.js`, a função `filter` está implementada, mas você precisa garantir que ela está sendo testada corretamente e que o filtro está funcionando.
+
+---
+
+- Para a ordenação dos agentes por data de incorporação (`sort` query param), no controller você tem:
+
+```js
+const orderByMapping = {
+    dataDeIncorporacao: ['dataDeIncorporacao', 'asc'],
+    '-dataDeIncorporacao': ['dataDeIncorporacao', 'desc'],
+};
+
+let orderBy = orderByMapping[sort];
+```
+
+Isso está correto, mas você precisa garantir que o valor de `sort` está vindo exatamente como `dataDeIncorporacao` ou `-dataDeIncorporacao`. Além disso, no repository, o método `findAll` já trata o `orderBy` assim:
+
+```js
+if (orderBy && orderBy.length === 2) {
+    query = query.orderBy(orderBy[0], orderBy[1]);
 }
 ```
 
-Aqui, a mensagem deveria ser referente ao caso, não ao agente:
+Então, essa parte parece ok, mas fique atento a possíveis valores inválidos no `sort` que podem causar falha silenciosa.
+
+---
+
+### 2. Pequenos ajustes para melhorar robustez e clareza
+
+- No controller `casosController.js`, na função `getAgenteByCasoId`, além do problema do parâmetro, você lança erro 404 se não encontrar o caso ou o agente, mas a mensagem do erro para agente não encontrado fala "Nenhum agente encontrado para o agente_id especificado". Seria interessante padronizar as mensagens para mais clareza e consistência.
+
+- No método `deleteCaso`, a mensagem de erro em caso de falha na remoção ainda cita "Erro ao remover o agente", o que é confuso. Ajuste para:
 
 ```js
 throw new AppError(500, 'Erro ao remover o caso');
 ```
 
-Esse detalhe pode confundir quem consumir sua API e dificulta o diagnóstico de problemas.
+---
+
+## 📚 Recursos para você aprofundar e corrigir esses pontos:
+
+- Para entender melhor sobre rotas e parâmetros em Express.js, veja este vídeo que explica como lidar com parâmetros dinâmicos:  
+  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
+
+- Para aprimorar o uso do Knex.js, principalmente filtros e ordenações, recomendo a documentação oficial:  
+  https://knexjs.org/guide/query-builder.html
+
+- Para aprender a criar mensagens de erro claras e padronizadas na API, e usar corretamente os status HTTP 400 e 404, veja:  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404
+
+- Caso queira reforçar o entendimento sobre validação e tratamento de erros em APIs Express, este vídeo é ótimo:  
+  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
 
 ---
 
-### 6. **Retorno de datas no formato correto**
+## 🗺️ Estrutura do projeto
 
-No `agentesRepository.js`, você está convertendo as datas para o formato ISO string cortado para `YYYY-MM-DD`, o que é ótimo:
+Sua estrutura de diretórios está perfeita e segue o padrão esperado:
 
-```js
-dataDeIncorporacao: new Date(agente.dataDeIncorporacao).toISOString().split('T')[0],
+```
+.
+├── package.json
+├── server.js
+├── knexfile.js
+├── INSTRUCTIONS.md
+│
+├── db/
+│   ├── migrations/
+│   ├── seeds/
+│   └── db.js
+│
+├── routes/
+│   ├── agentesRoutes.js
+│   └── casosRoutes.js
+│
+├── controllers/
+│   ├── agentesController.js
+│   └── casosController.js
+│
+├── repositories/
+│   ├── agentesRepository.js
+│   └── casosRepository.js
+│
+└── utils/
+    └── errorHandler.js
 ```
 
-Porém, no `casosRepository.js`, você não está fazendo nada parecido para datas (se houvesse campos de data). Como não há datas na tabela `casos`, isso está ok.
-
-Só fique atenta para manter esse padrão consistente em todos os lugares onde datas aparecem.
+Manter essa organização vai te ajudar muito em projetos futuros! 🚀
 
 ---
 
-### 7. **Sugestão para melhoria: usar `.first()` nas consultas que retornam um único registro**
+## 🔑 Resumo rápido para focar:
 
-Em vários lugares do seu código, você faz:
-
-```js
-const [result] = await db('agentes').select('*').where({ id });
-```
-
-Ou:
-
-```js
-const [newAgente] = await db('agentes').insert(agente).returning('*');
-```
-
-No caso do `select`, usar `.first()` deixa o código mais direto e legível:
-
-```js
-const result = await db('agentes').where({ id }).first();
-```
-
-Isso não é um erro, mas uma boa prática para tornar o código mais claro.
+- Corrija o nome do parâmetro na rota `/casos/:id/agente` para alinhar com o controller (`:caso_id` ou `:id`).
+- Garanta que o filtro no `casosRepository.findAll` trate os filtros explicitamente para evitar falhas silenciosas.
+- Implemente ou ajuste os endpoints bônus que buscam casos por agente e agentes por caso.
+- Padronize as mensagens de erro para mais clareza e ajuste pequenos detalhes como mensagem em `deleteCaso`.
+- Verifique o tratamento do parâmetro `sort` para ordenação dos agentes e valide os valores possíveis.
+- Teste o endpoint de busca por palavras-chave (`/casos/search`) para garantir que está funcionando e integrado.
 
 ---
 
-## Recursos para você avançar ainda mais 🚀
+Edu, você está muito próximo da perfeição! 🌟 O que falta são ajustes finos e o toque final nos extras que vão deixar sua API ainda mais completa e profissional. Continue firme, você está no caminho certo! 💪🚓
 
-- Para garantir que sua conexão com o banco está perfeita e entender como configurar o Docker com PostgreSQL e Node.js, recomendo este vídeo:  
-  [Configuração de Banco de Dados com Docker e Knex](http://googleusercontent.com/youtube.com/docker-postgresql-node)
+Se precisar, volte aqui para tirar dúvidas ou revisar juntos esses pontos. Estou torcendo pelo seu sucesso! 🎯
 
-- Para dominar as migrations e seeds no Knex, veja a documentação oficial:  
-  [Knex Migrations](https://knexjs.org/guide/migrations.html)  
-  [Knex Seeds](http://googleusercontent.com/youtube.com/knex-seeds)
-
-- Para entender melhor o Query Builder do Knex e garantir que suas queries estejam corretas:  
-  [Knex Query Builder](https://knexjs.org/guide/query-builder.html)
-
-- Para aprimorar a validação e tratamento de erros na sua API:  
-  [Validação de Dados e Tratamento de Erros na API](https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_)
-
-- Para garantir o uso correto dos códigos HTTP e métodos REST:  
-  [Manipulação de Requisições e Respostas (Body, Query Params, Status Codes)](https://youtu.be/RSZHvQomeKE)
-
----
-
-## Resumo rápido dos pontos para focar 🔑
-
-- ✅ Verifique e garanta que o container Docker do PostgreSQL está rodando e que as migrations e seeds foram executadas.
-- ✅ Ajuste o enum `status` na migration para ter `notNullable()` e `defaultTo('aberto')`.
-- ✅ Corrija o parâmetro `req.params.caso_id` para `req.params.id` na função `getAgenteByCasoId`.
-- ✅ Melhore a validação de IDs para garantir que sejam inteiros positivos.
-- ✅ Corrija mensagens de erro para refletir o recurso correto (ex: erro ao remover caso, não agente).
-- ✅ Considere usar `.first()` para consultas que retornam um único registro para maior clareza.
-- ✅ Continue mantendo a organização modular e as validações que já estão muito boas!
-
----
-
-Eduarda, você está no caminho certo! 🚀 Muitas vezes, problemas em APIs que envolvem banco de dados têm a raiz no ambiente de desenvolvimento (configuração do banco, migrations, seeds). Depois de garantir que seu banco está rodando e populado, a maioria das funcionalidades vai funcionar corretamente.
-
-Continue firme, revisando cada camada da sua aplicação e testando cada endpoint com calma. Estou aqui torcendo pelo seu sucesso! 💪✨
-
-Se precisar, volte aos recursos indicados para fortalecer seu conhecimento. Você vai conseguir!
-
-Um abraço virtual e bons códigos! 👩‍💻👊
-
----
-
-Se quiser, posso ajudar a revisar algum trecho específico do seu código! Só pedir! 😊
+Abraços e até a próxima! 👋✨
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
